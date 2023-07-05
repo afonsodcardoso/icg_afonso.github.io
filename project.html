@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Shape Sorter Cube</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 999;
+        }
+
+        .arrow.left {
+            left: 20px;
+        }
+
+        .arrow.right {
+            right: 20px;
+        }
+
+        #menu-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="menu-container">
+        <label>
+            <input type="radio" name="background" value="2" checked> Background 2
+        </label>
+        <label>
+            <input type="radio" name="background" value="3"> Background 3
+        </label>
+        <label>
+            Light Speed:
+            <input id="light-speed" type="range" min="0.1" max="2" step="0.1" value="1" />
+        </label>
+    </div>
+    <div class="arrow left">&lt;</div>
+    <div class="arrow right">&gt;</div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.131.0/examples/js/controls/PointerLockControls.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+
+        // Adjust camera position
+        camera.position.set(0, 5, 10);
+        camera.lookAt(scene.position);
+
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+
+        const textureLoader = new THREE.TextureLoader();
+        const woodTexture = textureLoader.load('wood.jpg');
+        woodTexture.wrapS = THREE.RepeatWrapping;
+        woodTexture.wrapT = THREE.RepeatWrapping;
+        woodTexture.repeat.set(1, 1);
+
+        const material = new THREE.MeshStandardMaterial({
+            map: woodTexture,
+            roughness: 0.75,
+            metalness: 0.5
+        });
+
+        const cube = new THREE.Mesh(geometry, material);
+
+        // Adjust cube position
+        cube.position.y = -1.5;
+
+        // Adjust cube scale
+        cube.scale.set(2, 2, 2);
+
+        scene.add(cube);
+
+        // Create 2D shapes using THREE.Shape
+
+        const triangleShape = new THREE.Shape();
+        triangleShape.moveTo(-0.5, 0);
+        triangleShape.lineTo(0.5, 0);
+        triangleShape.lineTo(0, 1);
+        triangleShape.lineTo(-0.5, 0);
+
+        const circleShape = new THREE.Shape();
+        circleShape.absarc(0, 0, 0.5, 0, Math.PI * 2, false);
+
+        const squareShape = new THREE.Shape();
+        squareShape.moveTo(-0.5, -0.5);
+        squareShape.lineTo(0.5, -0.5);
+        squareShape.lineTo(0.5, 0.5);
+        squareShape.lineTo(-0.5, 0.5);
+        squareShape.lineTo(-0.5, -0.5);
+
+        const hexagonShape = new THREE.Shape();
+        const hexagonRadius = 0.5;
+        const hexagonAngleStep = (Math.PI * 2) / 6;
+        for (let i = 0; i < 6; i++) {
+            const angle = i * hexagonAngleStep;
+            const x = Math.cos(angle) * hexagonRadius;
+            const y = Math.sin(angle) * hexagonRadius;
+            if (i === 0) {
+                hexagonShape.moveTo(x, y);
+            } else {
+                hexagonShape.lineTo(x, y);
+            }
+        }
+        hexagonShape.closePath();
+
+        const dodecahedronShape = new THREE.Shape();
+        const dodecahedronRadius = 0.5;
+        const dodecahedronAngleStep = (Math.PI * 2) / 5;
+        let angle = Math.PI / 2;
+        for (let i = 0; i < 5; i++) {
+            const x = Math.cos(angle) * dodecahedronRadius;
+            const y = Math.sin(angle) * dodecahedronRadius;
+            if (i === 0) {
+                dodecahedronShape.moveTo(x, y);
+            } else {
+                dodecahedronShape.lineTo(x, y);
+            }
+            angle += dodecahedronAngleStep;
+        }
+        dodecahedronShape.closePath();
+
+        // Define extrusion settings for each shape
+
+        const extrusionSettings = {
+            depth: 0.5, // Extrusion depth
+            bevelEnabled: false // Disable bevel
+        };
+
+        // Extrude the shapes into 3D geometry using THREE.ExtrudeGeometry
+
+        const triangleGeometry = new THREE.ExtrudeGeometry(triangleShape, extrusionSettings);
+        const circleGeometry = new THREE.ExtrudeGeometry(circleShape, extrusionSettings);
+        const squareGeometry = new THREE.ExtrudeGeometry(squareShape, extrusionSettings);
+        const hexagonGeometry = new THREE.ExtrudeGeometry(hexagonShape, extrusionSettings);
+        const dodecahedronGeometry = new THREE.ExtrudeGeometry(dodecahedronShape, extrusionSettings);
+
+        // Create mesh objects from the extruded geometries
+
+        const triangleMesh = new THREE.Mesh(triangleGeometry, material);
+        const circleMesh = new THREE.Mesh(circleGeometry, material);
+        const squareMesh = new THREE.Mesh(squareGeometry, material);
+        const hexagonMesh = new THREE.Mesh(hexagonGeometry, material);
+        const dodecahedronMesh = new THREE.Mesh(dodecahedronGeometry, material);
+
+        // Adjust positions of the shapes
+
+        triangleMesh.position.set(0, 0, 2.5);
+        circleMesh.position.set(0, 0, -2.5);
+        squareMesh.position.set(-2.5, 0, 0);
+        hexagonMesh.position.set(2.5, 0, 0);
+        dodecahedronMesh.position.set(0, 2.5, 0);
+
+        // Add the shapes to the scene
+
+        scene.add(triangleMesh);
+        scene.add(circleMesh);
+        scene.add(squareMesh);
+        scene.add(hexagonMesh);
+        scene.add(dodecahedronMesh);
+
+        const light = new THREE.DirectionalLight(0xffffff, 1.5);
+        light.position.set(0, 5, 0);
+        scene.add(light);
+
+        const shapes = [
+            { geometry: new THREE.SphereGeometry(0.5, 32, 32), material: new THREE.MeshPhongMaterial({ color: '#ff0000' }) },
+            { geometry: new THREE.ConeGeometry(0.5, 1, 4), material: new THREE.MeshPhongMaterial({ color: '#00ff00' }) },
+            { geometry: new THREE.CylinderGeometry(0.5, 0.5, 1, 6), material: new THREE.MeshPhongMaterial({ color: '#0000ff' }) },
+            { geometry: new THREE.DodecahedronGeometry(0.5), material: new THREE.MeshPhongMaterial({ color: '#ff00ff' }) },
+            { geometry: new THREE.TetrahedronGeometry(0.5), material: new THREE.MeshPhongMaterial({ color: '#ff8000' }) },
+        ];
+
+        const spacing = 2; // Spacing between shapes
+        const totalWidth = shapes.length * spacing; // Total width occupied by shapes
+
+        const shapeMeshes = [];
+
+        shapes.forEach((shapeData, index) => {
+            const shapeMesh = new THREE.Mesh(shapeData.geometry, shapeData.material);
+
+            // Position the shape along the x-axis with equal spacing
+            const positionX = -totalWidth / 2 + index * spacing;
+            shapeMesh.position.set(positionX, -1.5, 0);
+
+            // Add the shape to the scene
+            scene.add(shapeMesh);
+            shapeMeshes.push(shapeMesh);
+        });
+
+        let rotationSpeed = 0; // Initial rotation speed
+        let lightSpeed = 1; // Initial light speed
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate the cube if rotation speed is non-zero
+            if (rotationSpeed !== 0) {
+                cube.rotation.y += rotationSpeed;
+
+                // Translate shapes around the cube
+                const radius = totalWidth / 2;
+                const rotationAngle = cube.rotation.y;
+                shapeMeshes.forEach((shapeMesh, index) => {
+                    const shapeDragPosition = shapeDragPositions[index];
+                    if (shapeDragPosition) {
+                        // Use the dragged position if available
+                        shapeMesh.position.copy(shapeDragPosition);
+                    } else {
+                        // Calculate the position based on the rotation of the cube
+                        const positionX = Math.cos(rotationAngle + (index * spacing * Math.PI / radius)) * radius;
+                        const positionZ = Math.sin(rotationAngle + (index * spacing * Math.PI / radius)) * radius;
+                        shapeMesh.position.set(positionX, -1.5, positionZ);
+                    }
+                });
+            }
+
+            // Rotate the light source
+            light.position.x = Math.sin(performance.now() / 1000 * lightSpeed) * 5;
+            light.position.z = Math.cos(performance.now() / 1000 * lightSpeed) * 5;
+
+            renderer.render(scene, camera);
+        }
+
+        const leftArrow = document.querySelector('.arrow.left');
+        const rightArrow = document.querySelector('.arrow.right');
+        const menuContainer = document.getElementById('menu-container');
+        const backgroundRadios = document.querySelectorAll('input[name="background"]');
+
+        leftArrow.addEventListener('mousedown', () => {
+            rotationSpeed = Math.PI / 60; // Rotate left at 1 degree per frame (60 frames per second)
+        });
+
+        leftArrow.addEventListener('mouseup', () => {
+            rotationSpeed = 0; // Stop rotation
+        });
+
+        rightArrow.addEventListener('mousedown', () => {
+            rotationSpeed = -Math.PI / 60; // Rotate right at 1 degree per frame (60 frames per second)
+        });
+
+        rightArrow.addEventListener('mouseup', () => {
+            rotationSpeed = 0; // Stop rotation
+        });
+
+        // Stop rotation when the mouse leaves the arrow buttons
+        leftArrow.addEventListener('mouseleave', () => {
+            rotationSpeed = 0; // Stop rotation
+        });
+
+        rightArrow.addEventListener('mouseleave', () => {
+            rotationSpeed = 0; // Stop rotation
+        });
+
+        // Update light speed when the slider value changes
+        const lightSpeedInput = document.getElementById('light-speed');
+        lightSpeedInput.addEventListener('input', () => {
+            lightSpeed = parseFloat(lightSpeedInput.value);
+        });
+
+        // Change the background when a radio option is selected
+        backgroundRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                const value = radio.value;
+                const textureLoader = new THREE.TextureLoader();
+                const texture = textureLoader.load(`background${value}.jpg`, () => {
+                    scene.background = texture;
+                    renderer.render(scene, camera);
+                });
+            });
+        });
+
+        /*
+
+        const dragControls = new THREE.DragControls(shapeMeshes, camera, renderer.domElement);
+        dragControls.addEventListener('dragstart', function (event) {
+            event.object.material.emissive.set(0xaaaaaa);
+        });
+        dragControls.addEventListener('dragend', function (event) {
+            event.object.material.emissive.set(0x000000);
+        });
+
+        dragControls.addEventListener('dragstart', function (event) {
+            event.object.material.opacity = 0.5;
+        });
+
+        dragControls.addEventListener('dragend', function (event) {
+            event.object.material.opacity = 1;
+        });
+
+        */
+
+        const dragControls = new THREE.PointerLockControls(camera, renderer.domElement);
+
+        document.addEventListener('pointerdown', onPointerDown);
+        document.addEventListener('pointermove', onPointerMove);
+        document.addEventListener('pointerup', onPointerUp);
+
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        const shapeDragPositions = []; // Store the dragged positions of the shapes
+
+        function onPointerDown(event) {
+            const intersects = getIntersects(event.clientX, event.clientY);
+            if (intersects.length > 0) {
+                isDragging = true;
+                const { x, y } = getNormalizedMouseCoordinates(event.clientX, event.clientY);
+                previousMousePosition = { x, y };
+
+                const selectedObject = intersects[0].object;
+                const shapeIndex = shapeMeshes.indexOf(selectedObject);
+                if (shapeIndex !== -1) {
+                    shapeDragPositions[shapeIndex] = selectedObject.position.clone(); // Store the current position of the shape
+                }
+            }
+        }
+
+        function onPointerMove(event) {
+            if (isDragging) {
+                const { x, y } = getNormalizedMouseCoordinates(event.clientX, event.clientY);
+                const delta = {
+                    x: x - previousMousePosition.x,
+                    y: y - previousMousePosition.y
+                };
+                previousMousePosition = { x, y };
+
+                const intersects = getIntersects(event.clientX, event.clientY);
+                if (intersects.length > 0) {
+                    const selectedObject = intersects[0].object;
+                    selectedObject.position.x += delta.x;
+                    selectedObject.position.y += delta.y;
+                }
+            }
+        }
+
+        function onPointerUp(event) {
+            isDragging = false;
+        }
+
+        function getNormalizedMouseCoordinates(clientX, clientY) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            return {
+                x: ((clientX - rect.left) / rect.width) * 2 - 1,
+                y: -((clientY - rect.top) / rect.height) * 2 + 1
+            };
+        }
+
+        function getIntersects(clientX, clientY) {
+            const mouse = new THREE.Vector2();
+            const raycaster = new THREE.Raycaster();
+
+            mouse.x = (clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            return raycaster.intersectObjects(shapeMeshes, true);
+        }
+
+        animate();
+
+      </script>
+    </body>
+</html>
